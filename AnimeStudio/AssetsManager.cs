@@ -711,13 +711,20 @@ namespace AnimeStudio
                             Logger.Info("Processing assets has been cancelled !!");
                             return;
                         }
-                        if (obj.type == ClassIDType.Mesh && obj.Name.StartsWith("SeparateMesh_"))
+                        if (obj.type == ClassIDType.Mesh)
                         {
                             var pptr = new PPtr<Mesh>(0, obj.m_PathID, assetsFile);
-                            separateMeshes.Add(obj.Name, pptr);
                             if (pptr.TryGet(out var mesh))
                             {
-                                Logger.Info($"FoundSeparateMesh {mesh.Name}");
+                                if (separateMeshes.ContainsKey(obj.Name))
+                                {
+                                    // Logger.Warning($"Found possible duplicate SeparateMesh: {obj.Name}, {mesh.Name}");
+                                }
+                                else
+                                {
+                                    Logger.Info($"Found SeparateMesh {mesh.Name}");
+                                    separateMeshes.Add(obj.Name, pptr);
+                                }
                             }
                             else
                             {
@@ -817,7 +824,7 @@ namespace AnimeStudio
                 foreach (var avatar in avatars)
                 {
                     var rootName = avatar.Name;
-                    Logger.Verbose($"Attempting to process SeparateMesh for {rootName}");
+                    Logger.Info($"Attempting to process SeparateMesh for {rootName}");
 
                     if (avatar.m_Transform != null)
                     {
@@ -829,7 +836,7 @@ namespace AnimeStudio
                                 var meshName = "SeparateMesh_" + rootName + "_" + childName;
                                 if (separateMeshes.TryGetValue(meshName, out var meshPPtr))
                                 {
-                                    Logger.Info($"Trying to attach {meshName} to {childName}");
+                                    Logger.Verbose($"Trying to attach {meshName} to {childName}");
                                     if (childGO.m_SkinnedMeshRenderer != null && childGO.m_SkinnedMeshRenderer.m_Mesh.IsNull)
                                     {
                                         Logger.Info($"Attached {meshName} to {childName}");
@@ -838,6 +845,20 @@ namespace AnimeStudio
                                     else if (childGO.m_MeshFilter != null && childGO.m_MeshFilter.m_Mesh.IsNull)
                                     {
                                         Logger.Info($"Attached {meshName} to {childName}");
+                                        childGO.m_MeshFilter.m_Mesh = meshPPtr;
+                                    }
+                                }
+                                else if (separateMeshes.TryGetValue(childName, out meshPPtr))
+                                {
+                                    Logger.Verbose($"Trying to attach {childName} to {childName}");
+                                    if (childGO.m_SkinnedMeshRenderer != null && childGO.m_SkinnedMeshRenderer.m_Mesh.IsNull)
+                                    {
+                                        Logger.Info($"Attached {childName} to {childName}");
+                                        childGO.m_SkinnedMeshRenderer.m_Mesh = meshPPtr;
+                                    }
+                                    else if (childGO.m_MeshFilter != null && childGO.m_MeshFilter.m_Mesh.IsNull)
+                                    {
+                                        Logger.Info($"Attached {childName} to {childName}");
                                         childGO.m_MeshFilter.m_Mesh = meshPPtr;
                                     }
                                 }
