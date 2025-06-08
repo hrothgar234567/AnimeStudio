@@ -702,6 +702,8 @@ namespace AnimeStudio
 
             if (Game.Type.IsZZZGroup())
             {   
+                // TODO: Refactor this to decrease the number of meshes. Possibly do this after we build the hierarchy to discover unused meshes (which are likely to be SeparateMeshes...)
+                // TODO: Somehow RE the behavior used to swap meshes to determine exact mappings instead of guessing by name...
                 foreach (var assetsFile in assetsFileList)
                 {
                     foreach (var obj in assetsFile.Objects)
@@ -722,7 +724,7 @@ namespace AnimeStudio
                                 }
                                 else
                                 {
-                                    Logger.Info($"Found SeparateMesh {mesh.Name}");
+                                    Logger.Verbose($"Found SeparateMesh {mesh.Name}");
                                     separateMeshes.Add(obj.Name, pptr);
                                 }
                             }
@@ -824,7 +826,7 @@ namespace AnimeStudio
                 foreach (var avatar in avatars)
                 {
                     var rootName = avatar.Name;
-                    Logger.Info($"Attempting to process SeparateMesh for {rootName}");
+                    Logger.Verbose($"Attempting to process SeparateMesh for {rootName}");
 
                     if (avatar.m_Transform != null)
                     {
