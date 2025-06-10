@@ -3,11 +3,25 @@ using System.Buffers;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Numerics;
 using System.Runtime.InteropServices;
-using System.Text;
+using System.Security.Cryptography;
 
 namespace AnimeStudio
 {
+    
+    public static class BlbHelper
+    {
+        [DllImport(@"hk4e_decomp.dll")]
+        static extern int DecryptBlb(ref byte buf, int buf_sz, ref byte header, int header_sz, uint mode);
+
+        public static int Decrypt(Span<byte> buf, Span<byte> header)
+        {
+            int numWrite = -1;
+            numWrite = DecryptBlb(ref buf[0], buf.Length, ref header[0], header.Length, 0);
+            return numWrite;
+        }
+    }
     public class Blb3File
     {
         private List<BundleFile.StorageBlock> m_BlocksInfo;
@@ -54,8 +68,16 @@ namespace AnimeStudio
             ulong header_size = (ulong)header.Length;
             ulong buffer_size = (ulong)buffer.Length;
 
+            Logger.Info($"Decrypt called: buf_sz: {buffer_size}; header: {Convert.ToHexString(header)}; header_sz: {header_size}");
 
             _decrypt(ref buffer[0], buffer_size > 128 ? 128 : buffer_size, ref header[0], header_size, 0);
+        }
+
+        public static void Decrypt2(byte[] header, Span<byte> buffer)
+        {
+            Logger.Info($"Decrypt2 called: buf_sz: {buffer.Length}; header: {Convert.ToHexString(header)}; header_sz: {header.Length}");
+
+            BlbHelper.Decrypt(buffer.Slice(0, Math.Min(buffer.Length, 128)), header);
         }
 
         public Blb3File(FileReader reader, string path)
@@ -85,7 +107,10 @@ namespace AnimeStudio
 
             var header = reader.ReadBytes((int)m_Header.compressedBlocksInfoSize);
 
-            Decrypt(Header, header);
+            // Logger.Info($"Header: {Convert.ToHexString(Header)}\ndata: {Convert.ToHexString(header)}");
+
+            //Decrypt(Header, header);
+            Decrypt2(Header, header);
 
             ReadBlocksInfoAndDirectory(header);
             using var blocksStream = CreateBlocksStream(path);
